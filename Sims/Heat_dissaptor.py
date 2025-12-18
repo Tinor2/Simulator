@@ -88,28 +88,11 @@ class HeatGrid(SimulatorGrid):
                 total += self.grid[i][j]
         return total
     
-    def set_heat(self, x: int, y: int, amount: int):
-        """Set heat at a specific position (with border offset)."""
-        self.update(x + 1, y + 1, amount)
-        
-    def set_heat_block(self, x1: int, y1: int, x2: int, y2: int, amount: int):
-        """Set a block of cells to a specific heat value."""
-        # Convert to 1-based coordinates and ensure within grid bounds
-        x1 = max(1, min(x1 + 1, self.width - 2))
-        y1 = max(1, min(y1 + 1, self.height - 2))
-        x2 = max(1, min(x2 + 1, self.width - 2))
-        y2 = max(1, min(y2 + 1, self.height - 2))
-        
-        # Ensure x1,y1 is top-left and x2,y2 is bottom-right
-        if x1 > x2:
-            x1, x2 = x2, x1
-        if y1 > y2:
-            y1, y2 = y2, y1
-            
-        # Set all cells in the block to the specified amount
-        for i in range(y1, y2 + 1):
-            for j in range(x1, x2 + 1):
-                self.grid[i][j] = amount
+    def set_value(self, x: int, y: int, amount: int):
+        super().set_value(x + 1, y + 1, amount)
+    
+    def set_value_block(self, x1: int, y1: int, x2: int, y2: int, amount: int):
+        super().set_value_block(x1 + 1, y1 + 1, x2 + 1, y2 + 1, amount)
     
     def run(self, steps: int, is_color: bool, use_diagonals: bool = True, 
             wrap: bool = False, delay: float = 0):
@@ -140,14 +123,14 @@ if __name__ == "__main__":
     grid = HeatGrid(100, 300, 0.25, 1)
     
     # Add some initial heat sources
-    grid.set_heat(2, 2, 20)
+    grid.set_value(2, 2, 20)
     # grid.set_obstacle(10, 10, 26, 11)
     
     print("Initial state:")
     # lost_heat = grid.run(50, True)
     for n in range(1000):
-        grid.set_heat(0, 0, 30)
-        grid.set_heat(30, 24, 20)
+        grid.set_value(0, 0, 30)
+        grid.set_value(30, 24, 20)
         grid.update_grid(use_diagonals=True, wrap=True, delay=0.000000001)
         os.system('cls' if os.name == 'nt' else 'clear')
         grid.render_colored_grid()

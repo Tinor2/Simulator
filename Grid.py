@@ -30,8 +30,8 @@ class Grid:
 
     def get_neighbors(self, x, y):
         neighbors = []
-        for i in range(x-1, x+2):
-            for j in range(y-1, y+2):
+        for i in range(y-1, y+2):
+            for j in range(x-1, x+2):
                 if i >= 0 and i < self.height and j >= 0 and j < self.width:
                     neighbors.append(self.grid[i][j])
         return neighbors
@@ -88,6 +88,43 @@ class SimulatorGrid(Grid):
             for j in range(x1, x2 + 1):
                 if 0 <= i < self.height and 0 <= j < self.width:
                     self.obstacle_mask[i][j] = 1
+    
+    def set_value(self, x: int, y: int, value: float):
+        """
+        Set a value at a specific position in the simulation grid.
+        
+        Args:
+            x: x-coordinate
+            y: y-coordinate
+            value: value to set
+        """
+        self.update(x, y, value)
+    
+    def set_value_block(self, x1: int, y1: int, x2: int, y2: int, value: float):
+        """
+        Set a rectangular block of cells to a specific value.
+        
+        Args:
+            x1, y1: top-left corner coordinates
+            x2, y2: bottom-right corner coordinates
+            value: value to set for all cells in the block
+        """
+        # Ensure coordinates are within bounds
+        x1 = max(0, min(x1, self.width - 1))
+        y1 = max(0, min(y1, self.height - 1))
+        x2 = max(0, min(x2, self.width - 1))
+        y2 = max(0, min(y2, self.height - 1))
+        
+        # Ensure x1,y1 is top-left and x2,y2 is bottom-right
+        if x1 > x2:
+            x1, x2 = x2, x1
+        if y1 > y2:
+            y1, y2 = y2, y1
+            
+        # Set all cells in the block to the specified value
+        for i in range(y1, y2 + 1):
+            for j in range(x1, x2 + 1):
+                self.grid[i][j] = value
     
     def _compute_cell_update(self, i: int, j: int, **kwargs) -> float:
         """
