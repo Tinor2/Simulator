@@ -8,9 +8,12 @@ A simple Python-based simulator contained in this repository.
 - Any required Python packages referenced in the code (install via `pip` as needed)
 
 ### How to Run
-
+```bash
+cd /Users/ronitbhandari/Desktop/Simulator && source venv/bin/activate && python -m flask_app.app
+```
 1. Open a terminal in this directory.
 2. Run the main simulation script, for example:
    - `python Heat_dissaptor.py`
 
 Adjust script arguments or parameters in the code as needed for your experiments.
+

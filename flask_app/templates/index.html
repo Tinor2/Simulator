@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="simulator-grid">
+    {% for sim in simulators %}
+    <div class="simulator-card">
+        <h3>{{ sim.name }}</h3>
+        <p>{{ sim.description }}</p>
+        <a href="{{ url_for('simulator', sim_id=sim.id) }}" class="btn">Launch</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

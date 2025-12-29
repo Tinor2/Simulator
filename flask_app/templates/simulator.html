@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="simulator-container">
+    <div class="controls-panel">
+        <h2>{{ config.name }}</h2>
+        
+        <form id="sim-form">
+            <h3>Parameters</h3>
+            {% for param in config.parameters %}
+            <div class="form-group">
+                <label for="{{ param.name }}">{{ param.name|replace('_', ' ')|title }}</label>
+                <input type="{{ param.type }}" 
+                       id="{{ param.name }}"
+                       name="{{ param.name }}"
+                       value="{{ param.default }}"
+                       {% if param.min is defined %}min="{{ param.min }}"{% endif %}
+                       {% if param.max is defined %}max="{{ param.max }}"{% endif %}
+                       {% if param.step is defined %}step="{{ param.step }}"{% endif %}>
+            </div>
+            {% endfor %}
+            
+            <h3>Initial Conditions</h3>
+            {% for condition in config.initial_conditions %}
+            <div class="form-group">
+                <label for="{{ condition.name }}">{{ condition.name|replace('_', ' ')|title }}</label>
+                <input type="{{ condition.type }}" 
+                       id="{{ condition.name }}"
+                       name="{{ condition.name }}"
+                       value="{{ condition.default }}">
+            </div>
+            {% endfor %}
+            
+            <button type="submit" id="start-btn" class="btn">Start Simulation</button>
+            <button type="button" id="stop-btn" class="btn btn-danger" disabled>Stop</button>
+        </form>
+        
+        <div class="metrics">
+            <p>Step: <span id="step-counter">0</span></p>
+            <p>Metric: <span id="metric-value">0</span></p>
+        </div>
+    </div>
+    
+    <div class="visualization-panel">
+        <canvas id="grid-canvas"></canvas>
+    </div>
+</div>
+
+<!-- In simulator.html, update the script section -->
+<script src="{{ url_for('static', filename='js/grid_renderer.js') }}"></script>
+<script>
+    // Use the sim_id passed from the backend
+    const simId = "{{ sim_id }}";
+    const colorScheme = "{{ config.color_scheme }}";
+</script>
+{% endblock %}

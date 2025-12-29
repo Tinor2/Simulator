@@ -88,11 +88,27 @@ class HeatGrid(SimulatorGrid):
                 total += self.grid[i][j]
         return total
     
-    def set_value(self, x: int, y: int, amount: int):
-        super().set_value(x + 1, y + 1, amount)
+    def set_value(self, x: int, y: int, value: float):
+        """
+        Set a value at a specific position in the simulation grid.
+        
+        Args:
+            x: x-coordinate
+            y: y-coordinate
+            value: value to set
+        """
+        super().set_value(x + 1, y + 1, value)
     
-    def set_value_block(self, x1: int, y1: int, x2: int, y2: int, amount: int):
-        super().set_value_block(x1 + 1, y1 + 1, x2 + 1, y2 + 1, amount)
+    def set_value_block(self, x1: int, y1: int, x2: int, y2: int, value: float):
+        """
+        Set a rectangular block of cells to a specific value.
+        
+        Args:
+            x1, y1: top-left corner coordinates
+            x2, y2: bottom-right corner coordinates
+            value: value to set for all cells in the block
+        """
+        super().set_value_block(x1 + 1, y1 + 1, x2 + 1, y2 + 1, value)
     
     def run(self, steps: int, is_color: bool, use_diagonals: bool = True, 
             wrap: bool = False, delay: float = 0):

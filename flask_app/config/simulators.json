@@ -1,0 +1,37 @@
+{
+  "heat": {
+    "name": "Heat Dissipation",
+    "class_name": "HeatGrid",
+    "module_path": "Sims.Heat_dissaptor",
+    "description": "Simulates heat diffusion across a 2D grid",
+    "parameters": [
+      {"name": "width", "type": "int", "default": 100, "min": 10, "max": 200},
+      {"name": "height", "type": "int", "default": 100, "min": 10, "max": 200},
+      {"name": "time_step", "type": "float", "default": 0.25, "min": 0.01, "max": 1.0, "step": 0.01},
+      {"name": "thermal_diffusivity", "type": "float", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1}
+    ],
+    "initial_conditions": [
+      {"name": "heat_source_x", "type": "int", "default": 50},
+      {"name": "heat_source_y", "type": "int", "default": 50},
+      {"name": "heat_amount", "type": "float", "default": 20}
+    ],
+    "color_scheme": "heat"
+  },
+  "ripples": {
+    "name": "Ripple Effect",
+    "class_name": "Ripples",
+    "module_path": "Sims.ripples",
+    "description": "Simulates ripple propagation",
+    "parameters": [
+      {"name": "width", "type": "int", "default": 30, "min": 10, "max": 100},
+      {"name": "height", "type": "int", "default": 20, "min": 10, "max": 100},
+      {"name": "time_step", "type": "float", "default": 0.1, "min": 0.01, "max": 1.0, "step": 0.01}
+    ],
+    "initial_conditions": [
+      {"name": "source_x", "type": "int", "default": 15},
+      {"name": "source_y", "type": "int", "default": 10},
+      {"name": "intensity", "type": "float", "default": 30}
+    ],
+    "color_scheme": "ripple"
+  }
+}

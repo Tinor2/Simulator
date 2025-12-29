@@ -25,11 +25,12 @@ class Ripples(SimulatorGrid):
             return temp_val
 
     def set_value(self, x: int, y: int, value: float):
+        """Set a value at a specific position in the grid and update flags."""
         super().set_value(x, y, value)
-        # Direct grid access to match coordinates
         self.grid_flags.grid[y][x] = value
 
     def set_value_block(self, x1: int, y1: int, x2: int, y2: int, value: float):
+        """Set a block of values in the grid and update flags."""
         super().set_value_block(x1, y1, x2, y2, value)
         # Update flags for the block as well
         for i in range(y1, y2 + 1):
