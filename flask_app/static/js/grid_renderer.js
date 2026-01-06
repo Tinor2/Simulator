@@ -2,7 +2,6 @@
 let canvas, ctx;
 let cellSize = 20; // Default cell size
 let gridWidth, gridHeight;
-
 // Initialize the canvas
 function initCanvas() {
     canvas = document.getElementById('grid-canvas');
@@ -40,28 +39,68 @@ window.updateGrid = function(grid, colorScheme = 'heat') {
     gridHeight = grid.length;
     if (gridHeight === 0) return;
     gridWidth = grid[0].length;
+
+    // Many simulators include a +2 border. Skip the border cells when rendering.
+    const skipBorder = gridHeight >= 3 && gridWidth >= 3;
+    const startX = skipBorder ? 1 : 0;
+    const startY = skipBorder ? 1 : 0;
+    const endX = skipBorder ? gridWidth - 1 : gridWidth;
+    const endY = skipBorder ? gridHeight - 1 : gridHeight;
+    const renderWidth = endX - startX;
+    const renderHeight = endY - startY;
+
+    // Compute min/max over interior for normalization (heat values can be 0..30 etc.)
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+            const v = grid[y][x];
+            if (typeof v === 'number' && Number.isFinite(v)) {
+                if (v < minVal) minVal = v;
+                if (v > maxVal) maxVal = v;
+            }
+        }
+    }
+    if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || minVal === maxVal) {
+        minVal = 0;
+        maxVal = 1;
+    }
     
     // Calculate cell size to fit the grid
-    const maxCellSize = Math.min(canvas.width / gridWidth, canvas.height / gridHeight);
+    const maxCellSize = Math.min(canvas.width / renderWidth, canvas.height / renderHeight);
     cellSize = Math.max(5, Math.min(20, maxCellSize)); // Keep cell size reasonable
     
     // Center the grid
-    const offsetX = (canvas.width - (gridWidth * cellSize)) / 2;
-    const offsetY = (canvas.height - (gridHeight * cellSize)) / 2;
+    const offsetX = (canvas.width - (renderWidth * cellSize)) / 2;
+    const offsetY = (canvas.height - (renderHeight * cellSize)) / 2;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw grid cells
-    for (let y = 0; y < gridHeight; y++) {
-        for (let x = 0; x < gridWidth; x++) {
+    
+    for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
             const value = grid[y][x];
-            const color = getColor(value, colorScheme);
+            let normalized;
+            // Get the current state of the dynamic color checkbox
+            const dynamicColorCheckbox = document.getElementById('is_dynamic_color');
+            const isDynamicColor = dynamicColorCheckbox ? dynamicColorCheckbox.checked : true; // Default to true if not found
+            
+            if (isDynamicColor) { 
+                // Dynamic scaling: normalize between current min and max
+                normalized = (value - minVal) / (maxVal - minVal);
+            } else {
+                // Fixed scaling: use raw value (assuming it's already in 0-1 range)
+                // If values can be outside 0-1, you might want to add: normalized = Math.max(0, Math.min(1, value));
+                normalized = value;
+            }
+            const color = getColor(normalized, colorScheme);
             
             ctx.fillStyle = color;
             ctx.fillRect(
-                Math.round(offsetX + x * cellSize),
-                Math.round(offsetY + y * cellSize),
+                Math.round(offsetX + (x - startX) * cellSize),
+                Math.round(offsetY + (y - startY) * cellSize),
                 Math.ceil(cellSize - 1),  // Slight gap between cells
                 Math.ceil(cellSize - 1)
             );
@@ -74,20 +113,20 @@ window.updateGrid = function(grid, colorScheme = 'heat') {
         ctx.lineWidth = 0.5;
         
         // Vertical lines
-        for (let x = 0; x <= gridWidth; x++) {
+        for (let x = 0; x <= renderWidth; x++) {
             const xPos = Math.round(offsetX + x * cellSize);
             ctx.beginPath();
             ctx.moveTo(xPos, offsetY);
-            ctx.lineTo(xPos, offsetY + gridHeight * cellSize);
+            ctx.lineTo(xPos, offsetY + renderHeight * cellSize);
             ctx.stroke();
         }
         
         // Horizontal lines
-        for (let y = 0; y <= gridHeight; y++) {
+        for (let y = 0; y <= renderHeight; y++) {
             const yPos = Math.round(offsetY + y * cellSize);
             ctx.beginPath();
             ctx.moveTo(offsetX, yPos);
-            ctx.lineTo(offsetX + gridWidth * cellSize, yPos);
+            ctx.lineTo(offsetX + renderWidth * cellSize, yPos);
             ctx.stroke();
         }
     }

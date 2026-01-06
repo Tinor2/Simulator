@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script>
+    // Initialize configuration
+    const config = JSON.parse('{{ config|tojson|safe }}');
+    const simId = "{{ sim_id }}";
+    const colorScheme = config.color_scheme;
+    
+    // Debug: Log config to console
+    console.log('Simulator config:', config);
+    console.log('Parameters:', config.parameters);
+</script>
+
 <div class="simulator-container">
     <div class="controls-panel">
         <h2>{{ config.name }}</h2>
@@ -9,10 +20,28 @@
             <h3>Parameters</h3>
             {% for param in config.parameters %}
             <div class="form-group">
-                <label for="{{ param.name }}">{{ param.name|replace('_', ' ')|title }}</label>
+                <label for="{{ param.name }}" class="param-label">
+                    <span>{{ param.name|replace('_', ' ')|title }}</span>
+                    {% if param.description is defined and param.description %}
+                    <span class="param-info">
+                        <button
+                            type="button"
+                            class="param-info-btn"
+                            aria-label="Info for {{ param.name|replace('_', ' ')|title }}"
+                            data-tooltip-for="{{ param.name }}"
+                        >i</button>
+                        <span
+                            class="param-tooltip"
+                            data-tooltip-id="{{ param.name }}"
+                            hidden
+                        >{{ param.description }}</span>
+                    </span>
+                    {% endif %}
+                </label>
                 <input type="{{ param.type }}" 
                        id="{{ param.name }}"
                        name="{{ param.name }}"
+                       data-field-group="parameters"
                        value="{{ param.default }}"
                        {% if param.min is defined %}min="{{ param.min }}"{% endif %}
                        {% if param.max is defined %}max="{{ param.max }}"{% endif %}
@@ -21,15 +50,85 @@
             {% endfor %}
             
             <h3>Initial Conditions</h3>
-            {% for condition in config.initial_conditions %}
-            <div class="form-group">
-                <label for="{{ condition.name }}">{{ condition.name|replace('_', ' ')|title }}</label>
-                <input type="{{ condition.type }}" 
-                       id="{{ condition.name }}"
-                       name="{{ condition.name }}"
-                       value="{{ condition.default }}">
+            <div id="sources-container">
+                <table id="sources-table" class="sources-table">
+                    <thead>
+                        <tr>
+                            <th>X Position</th>
+                            <th>Y Position</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sources-tbody">
+                        <tr class="source-row">
+                            <td><input type="number" name="source_x" data-field-group="initial_conditions" class="source-input" min="0" value="{{ config.width // 2 if config.width is defined else 15 }}"></td>
+                            <td><input type="number" name="source_y" data-field-group="initial_conditions" class="source-input" min="0" value="{{ config.height // 2 if config.height is defined else 10 }}"></td>
+                            <td><input type="number" name="source_value" data-field-group="initial_conditions" class="source-input" step="0.1" value="{{ config.initial_conditions|selectattr('name', 'equalto', 'intensity')|map(attribute='default')|first or '10' }}"></td>
+                            <td><button type="button" class="btn btn-sm btn-remove-source">×</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" id="add-source" class="btn btn-sm">+ Add Source</button>
             </div>
-            {% endfor %}
+
+            <div class="form-group">
+                <label class="toggle-row" for="wrap">
+                    <span class="toggle-label">Enable Wrapping</span>
+                    <input class="toggle-input" type="checkbox"
+                           id="wrap"
+                           name="wrap"
+                           data-field-group="initial_conditions">
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label class="toggle-row" for="use_diagonals">
+                    <span class="toggle-label">Use Diagonals</span>
+                    <input class="toggle-input" type="checkbox"
+                           id="use_diagonals"
+                           name="use_diagonals"
+                           data-field-group="initial_conditions"
+                           checked>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="toggle-row" for="is_dynamic_color">
+                    <span class="toggle-label">Dynamic Color Scaling</span>
+                    <input class="toggle-input" type="checkbox"
+                           id="is_dynamic_color"
+                           name="is_dynamic_color"
+                           data-field-group="initial_conditions"
+                           checked>
+                </label>
+            </div>
+
+            <h3>Performance</h3>
+            <div class="form-group">
+                <label for="frame_skip">Frame Skip</label>
+                <input type="number" 
+                       id="frame_skip"
+                       name="frame_skip"
+                       data-field-group="initial_conditions"
+                       value="0"
+                       min="0"
+                       max="100"
+                       step="1"
+                       title="Number of frames to skip between renders (0 = render every frame)">
+            </div>
+
+            <div class="form-group">
+                <label for="simulation_speed">Simulation Speed</label>
+                <input type="number" 
+                       id="simulation_speed"
+                       name="simulation_speed"
+                       data-field-group="initial_conditions"
+                       value="1.0"
+                       min="0.1"
+                       max="10.0"
+                       step="0.1"
+                       title="Speed multiplier for the simulation (1.0 = normal speed, 2.0 = 2x speed, etc.)">
+            </div>
             
             <button type="submit" id="start-btn" class="btn">Start Simulation</button>
             <button type="button" id="stop-btn" class="btn btn-danger" disabled>Stop</button>
@@ -46,11 +145,6 @@
     </div>
 </div>
 
-<!-- In simulator.html, update the script section -->
+<!-- Load grid renderer after all other scripts -->
 <script src="{{ url_for('static', filename='js/grid_renderer.js') }}"></script>
-<script>
-    // Use the sim_id passed from the backend
-    const simId = "{{ sim_id }}";
-    const colorScheme = "{{ config.color_scheme }}";
-</script>
 {% endblock %}

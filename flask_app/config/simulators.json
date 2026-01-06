@@ -1,14 +1,34 @@
 {
+  "sim1": {
+    "name": "Value Diffusion",
+    "class_name": "Sim1",
+    "module_path": "Sims.Sim1",
+    "description": "Simulates value diffusion across a 2D grid with configurable sources",
+    "parameters": [
+      {"name": "width", "type": "int", "default": 30, "min": 10, "max": 100, "description": "Grid width (cells)."},
+      {"name": "height", "type": "int", "default": 20, "min": 10, "max": 100, "description": "Grid height (cells)."},
+      {"name": "time_step", "type": "float", "default": 0.1, "min": 0.01, "max": 1.0, "step": 0.01, "description": "Simulation timestep. Smaller values are more stable but slower."}
+    ],
+    "initial_conditions": [
+      {"name": "source1_x", "type": "int", "default": 15, "min": 0, "max": 100, "description": "X position of first source"},
+      {"name": "source1_y", "type": "int", "default": 10, "min": 0, "max": 100, "description": "Y position of first source"},
+      {"name": "source1_value", "type": "float", "default": 30, "min": 1, "max": 100, "description": "Value of first source"},
+      {"name": "source2_x", "type": "int", "default": 27, "min": 0, "max": 29, "description": "X position of second source"},
+      {"name": "source2_y", "type": "int", "default": 19, "min": 0, "max": 19, "description": "Y position of second source"},
+      {"name": "source2_value", "type": "float", "default": 30, "min": 1, "max": 100, "description": "Value of second source"}
+    ],
+    "color_scheme": "heat"
+  },
   "heat": {
     "name": "Heat Dissipation",
     "class_name": "HeatGrid",
-    "module_path": "Sims.Heat_dissaptor",
+    "module_path": "Sims.Heat_dissipator",
     "description": "Simulates heat diffusion across a 2D grid",
     "parameters": [
-      {"name": "width", "type": "int", "default": 100, "min": 10, "max": 200},
-      {"name": "height", "type": "int", "default": 100, "min": 10, "max": 200},
-      {"name": "time_step", "type": "float", "default": 0.25, "min": 0.01, "max": 1.0, "step": 0.01},
-      {"name": "thermal_diffusivity", "type": "float", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1}
+      {"name": "width", "type": "int", "default": 100, "min": 10, "max": 200, "description": "Grid width (cells). Larger values increase detail but require more computation."},
+      {"name": "height", "type": "int", "default": 100, "min": 10, "max": 200, "description": "Grid height (cells). Larger values increase detail but require more computation."},
+      {"name": "time_step", "type": "float", "default": 0.25, "min": 0.01, "max": 1.0, "step": 0.01, "description": "Simulation timestep. Larger values run faster but can become unstable."},
+      {"name": "thermal_diffusivity", "type": "float", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1, "description": "How quickly heat spreads to neighboring cells. Higher values diffuse faster."}
     ],
     "initial_conditions": [
       {"name": "heat_source_x", "type": "int", "default": 50},
@@ -18,14 +38,14 @@
     "color_scheme": "heat"
   },
   "ripples": {
-    "name": "Ripple Effect",
+    "name": "Spirals",
     "class_name": "Ripples",
     "module_path": "Sims.ripples",
-    "description": "Simulates ripple propagation",
+    "description": "Simulates a weird mosaic pattern",
     "parameters": [
-      {"name": "width", "type": "int", "default": 30, "min": 10, "max": 100},
-      {"name": "height", "type": "int", "default": 20, "min": 10, "max": 100},
-      {"name": "time_step", "type": "float", "default": 0.1, "min": 0.01, "max": 1.0, "step": 0.01}
+      {"name": "width", "type": "int", "default": 30, "min": 10, "max": 100, "description": "Grid width (cells)."},
+      {"name": "height", "type": "int", "default": 20, "min": 10, "max": 100, "description": "Grid height (cells)."},
+      {"name": "time_step", "type": "float", "default": 0.1, "min": 0.01, "max": 1.0, "step": 0.01, "description": "Simulation timestep. Smaller values are more stable but slower."}
     ],
     "initial_conditions": [
       {"name": "source_x", "type": "int", "default": 15},

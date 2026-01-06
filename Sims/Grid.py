@@ -126,7 +126,8 @@ class SimulatorGrid(Grid):
             for j in range(x1, x2 + 1):
                 self.grid[i][j] = value
     
-    def _compute_cell_update(self, i: int, j: int, **kwargs) -> float:
+    def _compute_cell_update(self, i: int, j: int, use_diagonals: bool = False, 
+                          wrap: bool = False, **kwargs) -> float:
         """
         Compute the new value for a cell at position (i, j).
         This method should be overridden by child classes to implement
@@ -135,6 +136,8 @@ class SimulatorGrid(Grid):
         Args:
             i: row index
             j: column index
+            use_diagonals: Whether to consider diagonal neighbors in the computation
+            wrap: Whether to use periodic boundary conditions
             **kwargs: additional parameters for the update computation
             
         Returns:
@@ -142,7 +145,7 @@ class SimulatorGrid(Grid):
         """
         raise NotImplementedError("Child classes must implement _compute_cell_update")
     
-    def update_grid(self, use_diagonals: bool = False, wrap: bool = False, delay: float = 0, **kwargs):
+    def update_grid(self, use_diagonals: bool = False, wrap: bool = False, **kwargs):
         """
         Update the grid one timestep forward.
         
@@ -173,8 +176,6 @@ class SimulatorGrid(Grid):
         self.grid = buffer_grid
 
         # Optional: slow down for visualization
-        if delay > 0:
-            time.sleep(delay)
     
     def _get_metric(self) -> float:
         """
@@ -191,7 +192,8 @@ class SimulatorGrid(Grid):
         return total
     
     def run(self, steps: int, is_color: bool = False, use_diagonals: bool = False, 
-            wrap: bool = False, delay: float = 0, display_metric: bool = True, **kwargs):
+            wrap: bool = False, delay: float = 0, display_metric: bool = True, 
+            frame_skip: int = 0, simulation_speed: float = 1.0, **kwargs):
         """
         Run the simulation for a specified number of steps.
         
@@ -200,14 +202,19 @@ class SimulatorGrid(Grid):
             is_color: Whether to use colored rendering
             use_diagonals: Whether to consider diagonal neighbors
             wrap: Whether to use periodic boundary conditions
-            delay: Time delay between steps for visualization
+            delay: Base time delay between steps for visualization (in seconds)
             display_metric: Whether to print the metric each step
+            frame_skip: Number of frames to skip between renders (0 = render every frame)
+            simulation_speed: Speed multiplier for the simulation (1.0 = normal speed, 2.0 = 2x speed, etc.)
             **kwargs: Additional parameters for the simulation
             
         Returns:
             List of metric values over time
         """
         self.history = [self._get_metric()]
+        
+        # Calculate actual delay based on simulation speed
+        actual_delay = max(0, delay / simulation_speed) if simulation_speed > 0 else 0
         
         # Initial display
         if is_color:
@@ -216,18 +223,25 @@ class SimulatorGrid(Grid):
             self.display(is_round=True)
         
         for step in range(steps):
-            self.update_grid(use_diagonals=use_diagonals, wrap=wrap, delay=delay, **kwargs)
+            # Always update the simulation state
+            self.update_grid(use_diagonals=use_diagonals, wrap=wrap, **kwargs)
             
-            if is_color:
-                self.render_colored_grid()
-            else:
-                self.display(is_round=True)
-            
-            metric = self._get_metric()
-            self.history.append(metric)
-            
-            if display_metric:
-                print(f"Step {step + 1}/{steps} - Metric: {metric:.2f}")
+            # Only render and update metrics on non-skipped frames
+            if frame_skip == 0 or step % (frame_skip + 1) == 0 or step == steps - 1:
+                if is_color:
+                    self.render_colored_grid()
+                else:
+                    self.display(is_round=True)
+                
+                metric = self._get_metric()
+                self.history.append(metric)
+                
+                if display_metric:
+                    print(f"Step {step + 1}/{steps} - Metric: {metric:.2f}")
+                
+                # Only apply delay when we're actually rendering
+                if actual_delay > 0:
+                    time.sleep(actual_delay)
         
         return self.history
 

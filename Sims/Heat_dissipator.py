@@ -1,4 +1,9 @@
-from Grid import SimulatorGrid
+try:
+    from .Grid import SimulatorGrid
+    print("Imported SimulatorGrid from .Grid")
+except ImportError:
+    print("Trying a reimport, error arised")
+    from Grid import SimulatorGrid
 import time
 import copy
 import os
@@ -147,7 +152,7 @@ if __name__ == "__main__":
     for n in range(1000):
         grid.set_value(0, 0, 30)
         grid.set_value(30, 24, 20)
-        grid.update_grid(use_diagonals=True, wrap=True, delay=0.000000001)
+        grid.update_grid(use_diagonals=True, wrap=True)
         os.system('cls' if os.name == 'nt' else 'clear')
         grid.render_colored_grid()
         print("\n\n\n")

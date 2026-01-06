@@ -5,6 +5,7 @@ import os
 from threading import Thread
 import time
 from typing import Dict, Any, List, Optional, Union
+import inspect
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -173,62 +174,147 @@ class SimulatorManager:
         sim_instance.is_running = True
         
         try:
-            # Apply initial conditions
-            for condition, value in initial_conditions.items():
-                if hasattr(sim_instance, condition):
-                    try:
-                        # Try to convert the value to the expected type
-                        attr_type = type(getattr(sim_instance, condition))
-                        setattr(sim_instance, condition, attr_type(value))
-                    except (ValueError, TypeError) as e:
-                        logger.warning(
-                            f"Could not set {condition}={value} on simulator: {str(e)}. "
-                            f"Using default value."
-                        )
+            # Pull simulation flags (UI toggles) out of initial_conditions if present.
+            # Keep defaults aligned with SimulatorGrid.update_grid defaults.
+            wrap = False
+            use_diagonals = False
+            frame_skip = 0
+            simulation_speed = 1.0
             
-            # Run simulation loop
-            for step in range(int(steps)):
+            if isinstance(initial_conditions, dict) and initial_conditions:
+                if 'wrap' in initial_conditions:
+                    wrap = bool(initial_conditions.get('wrap'))
+                    initial_conditions.pop('wrap', None)
+                if 'use_diagonals' in initial_conditions:
+                    use_diagonals = bool(initial_conditions.get('use_diagonals'))
+                    initial_conditions.pop('use_diagonals', None)
+                if 'frame_skip' in initial_conditions:
+                    frame_skip = max(0, int(initial_conditions.get('frame_skip', 0)))
+                    initial_conditions.pop('frame_skip', None)
+                if 'simulation_speed' in initial_conditions:
+                    simulation_speed = max(0.1, float(initial_conditions.get('simulation_speed', 1.0)))
+                    initial_conditions.pop('simulation_speed', None)
+
+            # Apply initial conditions
+            if isinstance(initial_conditions, dict) and initial_conditions:
+                # Handle multiple sources if present
+                if 'sources' in initial_conditions and hasattr(sim_instance, 'set_value'):
+                    try:
+                        for source in initial_conditions['sources']:
+                            x = int(source.get('x', 0))
+                            y = int(source.get('y', 0))
+                            value = float(source.get('value', 0))
+                            sim_instance.set_value(x, y, value)
+                    except Exception as e:
+                        logger.warning(f"Could not apply source initial conditions: {str(e)}")
+                
+                # Backward compatibility with single source format
+                else:
+                    # Heat simulator convention: set a single heat source
+                    if (
+                        hasattr(sim_instance, 'set_value')
+                        and callable(getattr(sim_instance, 'set_value'))
+                        and 'heat_source_x' in initial_conditions
+                    ):
+                        try:
+                            x = int(initial_conditions.get('heat_source_x', 0))
+                            y = int(initial_conditions.get('heat_source_y', 0))
+                            amount = float(initial_conditions.get('heat_amount', 0))
+                            sim_instance.set_value(x, y, amount)
+                        except Exception as e:
+                            logger.warning(f"Could not apply heat initial conditions via set_value: {str(e)}")
+
+                    # Ripples simulator convention: set a single wave source
+                    if (
+                        hasattr(sim_instance, 'set_value')
+                        and callable(getattr(sim_instance, 'set_value'))
+                        and 'source_x' in initial_conditions
+                    ):
+                        try:
+                            x = int(initial_conditions.get('source_x', 0))
+                            y = int(initial_conditions.get('source_y', 0))
+                            intensity = float(initial_conditions.get('intensity', 0))
+                            sim_instance.set_value(x, y, intensity)
+                        except Exception as e:
+                            logger.warning(f"Could not apply ripples initial conditions via set_value: {str(e)}")
+
+                    # Generic conventions: x/y/value and x1/y1/x2/y2/value blocks
+                    if hasattr(sim_instance, 'set_value') and callable(getattr(sim_instance, 'set_value')):
+                        if all(k in initial_conditions for k in ('x', 'y', 'value')):
+                            try:
+                                sim_instance.set_value(
+                                    int(initial_conditions.get('x', 0)),
+                                    int(initial_conditions.get('y', 0)),
+                                    float(initial_conditions.get('value', 0)),
+                                )
+                            except Exception as e:
+                                logger.warning(f"Could not apply initial conditions via set_value: {str(e)}")
+
+                    if hasattr(sim_instance, 'set_value_block') and callable(getattr(sim_instance, 'set_value_block')):
+                        if all(k in initial_conditions for k in ('x1', 'y1', 'x2', 'y2', 'value')):
+                            try:
+                                sim_instance.set_value_block(
+                                    int(initial_conditions.get('x1', 0)),
+                                    int(initial_conditions.get('y1', 0)),
+                                    int(initial_conditions.get('x2', 0)),
+                                    int(initial_conditions.get('y2', 0)),
+                                    float(initial_conditions.get('value', 0)),
+                                )
+                            except Exception as e:
+                                logger.warning(f"Could not apply initial conditions via set_value_block: {str(e)}")
+
+                # Apply other initial conditions as attributes
+                for condition, value in initial_conditions.items():
+                    if condition != 'sources' and hasattr(sim_instance, condition):
+                        try:
+                            attr_type = type(getattr(sim_instance, condition))
+                            setattr(sim_instance, condition, attr_type(value))
+                        except (ValueError, TypeError) as e:
+                            logger.warning(
+                                f"Could not set {condition}={value} on simulator: {str(e)}. "
+                                f"Using default value."
+                            )
+            
+            # Calculate delay based on simulation speed (inverse relationship)
+            base_delay = 0.05  # 50ms default delay
+            actual_delay = base_delay / simulation_speed if simulation_speed > 0 else 0
+            
+            # Main simulation loop
+            for step in range(steps):
                 if not getattr(sim_instance, 'is_running', True):
                     logger.info("Simulation stopped by user")
                     break
                     
-                try:
-                    # Update the simulation state
-                    sim_instance.update_grid(use_diagonals=True, wrap=True)
-                    
+                # Update the simulation
+                sim_instance.update_grid(use_diagonals=use_diagonals, wrap=wrap)
+                
+                # Only process rendering and emit updates if not skipping this frame
+                if frame_skip == 0 or step % (frame_skip + 1) == 0 or step == steps - 1:
                     # Get the current grid state
-                    if not hasattr(sim_instance, 'grid'):
-                        raise AttributeError("Simulator is missing 'grid' attribute after update")
-                    
-                    # Convert grid to serializable format
                     grid_data = self._serialize_grid(sim_instance.grid)
                     
-                    # Get metric if available
-                    metric = 0
-                    if hasattr(sim_instance, '_get_metric') and callable(sim_instance._get_metric):
-                        try:
-                            metric = float(sim_instance._get_metric())
-                        except (ValueError, TypeError) as e:
-                            logger.warning(f"Error getting metric: {str(e)}")
-                    
-                    # Emit update to client
-                    socketio.emit('grid_update', {
-                        'step': step,
-                        'grid': grid_data,
-                        'metric': metric,
-                        'total_steps': steps
-                    }, room=room)
+                    try:
+                        # Calculate metrics
+                        metric = sim_instance._get_metric() if hasattr(sim_instance, '_get_metric') else 0
+                        
+                        # Emit update to client
+                        socketio.emit('grid_update', {
+                            'step': step + 1,
+                            'grid': grid_data,
+                            'metric': metric,
+                            'total_steps': steps
+                        }, room=room)
+                        
+                    except Exception as e:
+                        error_msg = f"Error in simulation step {step}: {str(e)}"
+                        logger.error(error_msg, exc_info=True)
+                        socketio.emit('simulation_error', {'error': error_msg}, room=room)
+                        break
                     
                     # Throttle the simulation if needed
                     time_step = getattr(sim_instance, 'time_step', 0.1)
                     if time_step > 0:
                         time.sleep(time_step)
-                        
-                except Exception as e:
-                    error_msg = f"Error in simulation step {step}: {str(e)}"
-                    logger.error(error_msg, exc_info=True)
-                    socketio.emit('simulation_error', {'error': error_msg}, room=room)
-                    break
                     
         except Exception as e:
             error_msg = f"Fatal error in simulation: {str(e)}"

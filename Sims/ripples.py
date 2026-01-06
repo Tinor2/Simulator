@@ -1,4 +1,4 @@
-from Grid import SimulatorGrid, Grid
+from .Grid import SimulatorGrid, Grid
 import os
 import time
 

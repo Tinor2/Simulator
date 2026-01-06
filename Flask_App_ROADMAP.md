@@ -9,10 +9,10 @@ ONLY WORK BY PHASE - Do not race ahead and execute multiple phases at once - wor
 
 ```
 Simulator/
-├── Grid.py                    # Core grid logic (keep as-is)
 ├── Sims/
 │   ├── Heat_dissaptor.py     # Heat simulation (keep as-is)
 │   ├── ripples.py            # Ripple simulation (keep as-is)
+│   ├── Grid.py               # Grid simulation (keep as-is)
 │   └── __init__.py           # Package initialization
 ├── flask_app/
 │   ├── app.py                # Main Flask application

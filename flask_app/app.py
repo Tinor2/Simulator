@@ -145,7 +145,7 @@ def socket_error_handler(f):
 
 @socketio.on('connect')
 @socket_error_handler
-def handle_connect():
+def handle_connect(auth=None):
     """Handle new client connection."""
     logger.info(f"Client connected: {request.sid}")
     emit('connection_established', {'status': 'connected'})
